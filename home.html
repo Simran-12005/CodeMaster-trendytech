@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CodeMaster Homepage</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      background-color: #1f2937; /* dark gray */
+      color: white;
+    }
+
+    .navbar .logo {
+      display: flex;
+      align-items: center;
+    }
+
+    .navbar .logo img {
+      height: 50px;
+      margin-right: 10px;
+    }
+
+    .navbar .user-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    nav {
+      background-color: #333;
+      padding: 10px 20px;
+    }
+
+    nav ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    nav ul li {
+      margin-right: 20px;
+    }
+
+    nav ul li:last-child {
+      margin-right: 0;
+    }
+
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    nav ul li a:hover {
+      text-decoration: underline;
+      
+    }
+
+    .logo-banner {
+      background-image: url('CodeMaster.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      width: 300px;
+      height: 150px;
+      margin: 40px auto;
+    }
+
+    main {
+      padding: 20px;
+      text-align: center;
+    }
+
+    ul li {
+      text-align: left;
+      margin: 5px auto;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+
+ 
+  <div class="navbar">
+    <div class="logo">
+      <img src="user.jpg" alt="Logo">
+    
+    </div>
+    <div class="user-name" id="user-name"></div>
+  </div>
+
+  <!-- LINKS -->
+  <nav>
+    <ul>
+      
+      <li><a href="Code.html">Write Code</a></li>
+      <li><a href="Weight.html">Weightage of Code</a></li>
+      <li><a href="/leaderboard">Leaderboard</a></li>
+    </ul>
+  </nav>
+
+  <!-- MAIN SECTION -->
+  <main>
+    <div class="logo-banner"></div>
+    <h1>Welcome to CodeMaster</h1>
+    <p>Your place to learn Coding and Master Skills!!!!</p>
+    <br><br>
+    <h2>Rules of Code Competition</h2>
+    <ul>
+      
+      <li>Write a Code in either Python or C language</li>
+      <li> The participant must answer all the questions.</li>
+      <li>The Weightage of the total code should be less</li>
+    </ul>
+    <br>
+    <strong>HAPPY LEARNING AND HAPPY CODING!!</strong>
+  </main>
+
+  <!-- Fetch User Name -->
+  <script>
+  fetch('/api/profile')
+    .then(res => {
+      if (!res.ok) throw new Error('Not logged in');
+      return res.json();
+    })
+    .then(data => {
+      document.getElementById('user-name').innerText = `Welcome, ${data.name}`;
+    })
+   </script>
+
+</body>
+</html>
