@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CodeMaster Homepage</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      background-color: #1f2937;
+      color: white;
+    }
+
+    .user-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+    }
+
+    .user-name {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .logout-icon {
+      width: 25px;
+      height: 25px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .logout-icon:hover {
+      transform: scale(1.1);
+    }
+
+    .logo-banner {
+      background-image: url('CodeMaster.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      width: 300px;
+      height: 150px;
+      margin: 40px auto;
+    }
+
+    main {
+      padding: 20px;
+      text-align: center;
+    }
+
+    ul li {
+      text-align: left;
+      margin: 5px auto;
+      max-width: 600px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <div class="user-section">
+      <img src="user.jpg" alt="User Icon" class="user-icon">
+      <div class="user-name" id="user-name">Welcome</div>
+    </div>
+    <img src="logout.jpg" alt="Logout" class="logout-icon" onclick="logout()" title="Logout">
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="logo-banner"></div>
+    <h1>Welcome to CodeMaster</h1>
+    <p>Your place to learn Coding and Master Skills!!!!</p>
+    <br><br>
+    <h2>Rules of Code Competition</h2>
+    <ul>
+      <li>Write the Code in the language mentioned</li>
+      <li>The participant must answer all the questions.</li>
+      <li>The Weightage of the total code should be less</li>
+      <li>The Participant with the least Code Weightage will be the winner</li>
+    </ul>
+    <br>
+    <strong>BEST OF LUCK!!!!</strong>
+    <br><br>
+    <button onclick="window.location.href='Code.html'">Write Code</button>
+  </main>
+
+  <!-- SCRIPT -->
+  <script>
+    const username = localStorage.getItem('username');
+    const nameDiv = document.getElementById('user-name');
+
+    if (username) {
+      nameDiv.innerText = `${username}`;
+    } else {
+      nameDiv.innerText = ' Guest';
+      window.location.href = "login.html"; // redirect if not logged in
+    }
+
+    function logout() {
+      localStorage.removeItem('username');
+      window.location.href = "index.html";
+    }
+  </script>
+
+</body>
+</html>

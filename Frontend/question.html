@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeMaster - Solve</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      font-family: monospace;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 15px;
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+    #verdicts {
+      font-weight: bold;
+      font-size: 16px;
+      padding: 8px;
+      background-color: #fefefe;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    #complexity-row {
+      display: none;
+    }
+    #debug-console {
+      margin-top: 15px;
+      background:black;
+      padding: 12px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      color:green;
+      display: none;
+      border: 1px solid #ffaaaa;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="question-title">Write Code</h2>
+  <p id="question-description"></p>
+
+  <textarea id="code" placeholder="Write your code here..."></textarea><br>
+  <button onclick="submitCode()">Submit Code</button>
+
+  <div id="result">
+    <p><strong>Status:</strong> <span id="status">--</span></p>
+    <div id="complexity-row">
+      <p><strong>Complexity Score:</strong> <span id="complexity">--</span></p>
+    </div>
+    <p><strong>Test Case Results:</strong></p>
+    <pre id="verdicts">--</pre>
+  </div>
+
+  <div id="debug-console"></div>
+<script>
+    const questions = [
+      {
+        title: "Check if a Number is Even or Odd",
+        description: "Accept an integer input from the user. Determine whether it is divisible by 2 or not. Print 'Even' if divisible by 2, else print 'Odd'.",
+        language: "python"
+      },
+      {
+        title: "Generate the Fibonacci Series",
+        description: "Take a number 'n' as input to generate the Fibonacci sequence. Start from 0 and 1 and compute the next terms by summing the previous two. Display all n terms separated by spaces.",
+        language: "python"
+      },
+      {
+        title: "Multiplication Table from 2 to 10",
+        description: "Generate multiplication tables from 2 to 10. Each table should show results from 1 to 10 in the format: 2 x 1 = 2. Print all tables clearly for each number.",
+        language: "python"
+      },
+      {
+        title: "Calculate Factorial of a Number",
+        description: "Read an integer input from the user. Compute the factorial by multiplying all positive integers up to that number. Print the resulting factorial value.",
+        language: "python"
+      },
+      {
+        title: "Reverse a String",
+        description: "Take a string as input from the user. Reverse the order of characters manually or using slicing. Output the reversed string.",
+        language: "python"
+      },
+      {
+        title: "Check if a Number is Prime",
+        description: "Accept an integer from the user. Check if it is only divisible by 1 and itself. Print 'Prime' if it has no other divisors, else print 'Not Prime'.",
+        language: "python"
+      },
+      {
+        title: "Find the Largest of Three Numbers",
+        description: "Take three integers as input. Compare them using conditional statements. Output the largest number among the three.",
+        language: "python"
+      },
+      {
+        title: "Check if a String is a Palindrome",
+        description: "Read a string input from the user. Check whether it reads the same backward as forward. Print 'Palindrome' if it does, otherwise print 'Not Palindrome'.",
+        language: "python"
+      }
+    ];
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = parseInt(urlParams.get("id"));
+    const question = questions[id];
+
+    if (!question) {
+      alert("Invalid question ID.");
+      window.location.href = "/anything.txt";
+    }
+
+    document.getElementById("question-title").innerText = question.title;
+    document.getElementById("question-description").innerText = question.description;
+
+    function getTestCasesForQuestion(title) {
+      const testCasesMap = {
+        "Check if a Number is Even or Odd": [
+          { input: "2", expected: "Even" }, { input: "3", expected: "Odd" }, { input: "0", expected: "Even" },
+          { input: "11", expected: "Odd" }, { input: "100", expected: "Even" }, { input: "101", expected: "Odd" },
+          { input: "56", expected: "Even" }, { input: "99", expected: "Odd" }, { input: "88", expected: "Even" },
+          { input: "77", expected: "Odd" }
+        ],
+        "Generate the Fibonacci Series": [
+          { input: "1", expected: "0" }, { input: "2", expected: "0 1" }, { input: "3", expected: "0 1 1" },
+          { input: "4", expected: "0 1 1 2" }, { input: "5", expected: "0 1 1 2 3" },
+          { input: "6", expected: "0 1 1 2 3 5" }, { input: "7", expected: "0 1 1 2 3 5 8" },
+          { input: "8", expected: "0 1 1 2 3 5 8 13" }, { input: "9", expected: "0 1 1 2 3 5 8 13 21" },
+          { input: "10", expected: "0 1 1 2 3 5 8 13 21 34" }
+        ],
+        "Calculate Factorial of a Number": [
+          { input: "0", expected: "1" }, { input: "1", expected: "1" }, { input: "2", expected: "2" },
+          { input: "3", expected: "6" }, { input: "4", expected: "24" }, { input: "5", expected: "120" },
+          { input: "6", expected: "720" }, { input: "7", expected: "5040" }, { input: "8", expected: "40320" },
+          { input: "9", expected: "362880" }
+        ],
+        "Reverse a String": [
+          { input: "hello", expected: "olleh" }, { input: "world", expected: "dlrow" },
+          { input: "abc", expected: "cba" }, { input: "racecar", expected: "racecar" },
+          { input: "12345", expected: "54321" }, { input: "level", expected: "level" },
+          { input: "noon", expected: "noon" }, { input: "test", expected: "tset" },
+          { input: "coding", expected: "gnidoc" }, { input: "madam", expected: "madam" }
+        ],
+        "Check if a Number is Prime": [
+          { input: "2", expected: "Prime" }, { input: "3", expected: "Prime" }, { input: "4", expected: "Not Prime" },
+          { input: "5", expected: "Prime" }, { input: "6", expected: "Not Prime" }, { input: "7", expected: "Prime" },
+          { input: "8", expected: "Not Prime" }, { input: "9", expected: "Not Prime" },
+          { input: "10", expected: "Not Prime" }, { input: "11", expected: "Prime" }
+        ],
+        "Find the Largest of Three Numbers": [
+          { input: "1 2 3", expected: "3" }, { input: "10 20 5", expected: "20" }, { input: "100 30 40", expected: "100" },
+          { input: "5 50 45", expected: "50" }, { input: "60 60 60", expected: "60" }, { input: "0 -1 -2", expected: "0" },
+          { input: "-5 -10 -1", expected: "-1" }, { input: "300 200 100", expected: "300" },
+          { input: "25 75 50", expected: "75" }, { input: "15 10 20", expected: "20" }
+        ],
+        "Check if a String is a Palindrome": [
+          { input: "madam", expected: "Palindrome" }, { input: "hello", expected: "Not Palindrome" },
+          { input: "racecar", expected: "Palindrome" }, { input: "level", expected: "Palindrome" },
+          { input: "world", expected: "Not Palindrome" }, { input: "noon", expected: "Palindrome" },
+          { input: "python", expected: "Not Palindrome" }, { input: "radar", expected: "Palindrome" },
+          { input: "refer", expected: "Palindrome" }, { input: "check", expected: "Not Palindrome" }
+        ],
+        "Multiplication Table from 2 to 10": [
+          { input: "", expected: "2 4 6 8 10 12 14 16 18 20" },
+          { input: "", expected: "3 6 9 12 15 18 21 24 27 30" },
+          { input: "", expected: "4 8 12 16 20 24 28 32 36 40" },
+          { input: "", expected: "5 10 15 20 25 30 35 40 45 50" },
+          { input: "", expected: "6 12 18 24 30 36 42 48 54 60" },
+          { input: "", expected: "7 14 21 28 35 42 49 56 63 70" },
+          { input: "", expected: "8 16 24 32 40 48 56 64 72 80" },
+          { input: "", expected: "9 18 27 36 45 54 63 72 81 90" },
+          { input: "", expected: "10 20 30 40 50 60 70 80 90 100" },
+          { input: "", expected: "11 22 33 44 55 66 77 88 99 110" }
+        ]
+      };
+      return testCasesMap[title] || [];
+    }
+
+    async function submitCode() {
+  const code = document.getElementById("code").value;
+  const language = question.language;
+  const questionTitle = question.title;
+  const id = parseInt(new URLSearchParams(window.location.search).get("id"));
+
+  const debugConsole = document.getElementById("debug-console");
+  debugConsole.style.display = "none";
+  debugConsole.innerText = "";
+
+  document.getElementById("complexity-row").style.display = "none";
+
+  if (!code.trim()) {
+    alert("Please enter your code before submitting.");
+    return;
+  }
+
+  try {
+    const runResponse = await fetch("http://localhost:5000/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code,
+        language,
+        testCases: getTestCasesForQuestion(questionTitle)
+      })
+    });
+
+    const runData = await runResponse.json();
+
+    const statusSpan = document.getElementById("status");
+    const verdicts = document.getElementById("verdicts");
+
+    verdicts.innerText = `${runData.passed} / ${runData.total} Test Cases Passed`;
+
+    let solved = JSON.parse(localStorage.getItem("solvedQuestions") || "[]");
+
+    if (runData.passed === runData.total) {
+      // ✅ All test cases passed
+      statusSpan.innerText = "✅ Solved";
+      statusSpan.style.color = "green";
+
+      // Save as solved
+      if (!solved.includes(id)) {
+        solved.push(id);
+        localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+      }
+
+      // Show complexity only when solved
+      const analyzeResponse = await fetch("http://127.0.0.1:5000/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language, code })
+      });
+
+      const analyzeData = await analyzeResponse.json();
+      document.getElementById("complexity").innerText = analyzeData.weight || "N/A";
+      document.getElementById("complexity-row").style.display = "block";
+
+    } else {
+      // ❌ Not all test cases passed
+      statusSpan.innerText = "❌ Not Solved";
+      statusSpan.style.color = "red";
+
+      // Remove from solved list
+      if (solved.includes(id)) {
+        solved = solved.filter(qid => qid !== id);
+        localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+      }
+    }
+
+    document.getElementById("result").style.display = "block";
+
+    
+   // 💥 Show debug errors if available
+if (runData.stderr || runData.error) {
+  // Clean the error message to remove file paths
+  const rawError = runData.stderr || runData.error;
+
+  // Use a regex to remove file paths (common formats like "/user/code/file.c:10:..." or "at file.js:10")
+  const cleanedError = rawError
+    .split('\n')                       // Split by line
+    .filter(line => !line.match(/\/.*\.c|\.py|\.js|\.cpp|\.java|\.ts|at .*\.js|at Module/)) // Remove file paths
+    .join('\n');                       // Rejoin filtered lines
+
+  debugConsole.innerText = `💥 Code Error:\n${cleanedError.trim()}`;
+  debugConsole.style.display = "block";
+
+  // Also remove from solved
+  if (solved.includes(id)) {
+    solved = solved.filter(qid => qid !== id);
+    localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+  }
+}
+
+
+  } catch (err) {
+    // ❌ Backend or system error
+    document.getElementById("status").innerText = "❌ Error";
+    document.getElementById("status").style.color = "red";
+    document.getElementById("verdicts").innerText = "Error during execution or server unavailable.";
+    document.getElementById("result").style.display = "block";
+
+    debugConsole.innerText = `🚨 System Error:\n${err.message}`;
+    debugConsole.style.display = "block";
+
+    // Remove solved status on crash
+    let solved = JSON.parse(localStorage.getItem("solvedQuestions") || "[]");
+    if (solved.includes(id)) {
+      solved = solved.filter(qid => qid !== id);
+      localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+    }
+  }
+}await fetch("http://localhost:3000/api/submit-solution", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    username: localStorage.getItem("username") || "Guest",
+    questionNumber: id,
+    complexity: analyzeData.weight
+  })
+});
+
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CodeMaster - Questions</title>
+</head>
+<body>
+  <h1>🧠 Choose a Coding Question</h1>
+  <ul>
+    <% questions.forEach(q => { %>
+      <li><a href="/question/<%= q._id %>"><%= q.title %></a></li>
+    <% }) %>
+  </ul>
+</body>
+</html>
