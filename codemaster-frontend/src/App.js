@@ -1,11 +1,14 @@
+// src/App.js
 import React from 'react';
+import Leaderboard from './components/leaderboard';
 
-function Leaderboard() {
+
+function App() {
   return (
-    <div>
-      <h2>Leaderboard</h2>
+    <div className="App">
+      <Leaderboard />  {/* 👈 using your React component here */}
     </div>
   );
 }
 
-export default Leaderboard; // ✅ MUST be default export
+export default App;

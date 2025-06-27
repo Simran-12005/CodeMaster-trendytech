@@ -90,6 +90,52 @@
     button:hover {
       background-color: #0056b3;
     }
+
+    #user-status {
+      margin-top: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    #leaderboard-preview {
+      margin-top: 40px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #leaderboard-preview h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    #top-players li {
+      list-style: none;
+      font-size: 16px;
+      margin: 6px 0;
+      text-align: left;
+    }
+
+    #top-players li span {
+      font-weight: bold;
+    }
+
+    #leaderboard-preview a {
+      text-decoration: none;
+      color: #007bff;
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    #leaderboard-preview a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -108,10 +154,12 @@
     <div class="logo-banner"></div>
     <h1>Welcome to CodeMaster</h1>
     <p>Your place to learn Coding and Master Skills!!!!</p>
+
+    <div id="user-status">Loading your status...</div>
+
     <br><br>
     <h2>Rules of Code Competition</h2>
     <ul>
-      <li>Write the Code in the language mentioned</li>
       <li>The participant must answer all the questions.</li>
       <li>The Weightage of the total code should be less</li>
       <li>The Participant with the least Code Weightage will be the winner</li>
@@ -120,25 +168,80 @@
     <strong>BEST OF LUCK!!!!</strong>
     <br><br>
     <button onclick="window.location.href='Code.html'">Write Code</button>
+
+   <!-- LEADERBOARD PREVIEW -->
+    <div id="leaderboard-preview">
+      <h3>Leaderboard</h3>
+      <ul id="top-players">
+        <li>Loading leaderboard...</li>
+      </ul>
+      <a href="leaderboard.html">View Full Leaderboard →</a>
+    </div>
   </main>
 
   <!-- SCRIPT -->
   <script>
-    const username = localStorage.getItem('username');
-    const nameDiv = document.getElementById('user-name');
+    document.addEventListener('DOMContentLoaded', function() {
+      // User status
+      const username = localStorage.getItem('username');
+      const nameDiv = document.getElementById('user-name');
+      const statusDiv = document.getElementById('user-status');
 
-    if (username) {
-      nameDiv.innerText = `${username}`;
-    } else {
-      nameDiv.innerText = ' Guest';
-      window.location.href = "login.html"; // redirect if not logged in
-    }
+      if (username) {
+        nameDiv.textContent = username;
+      } else {
+        nameDiv.textContent = 'Guest';
+        window.location.href = "login.html";
+      }
+
+      // Show number of solved questions
+      const solved = JSON.parse(localStorage.getItem("solvedQuestions")) || [];
+      statusDiv.textContent = `✅ Questions Solved: ${solved.length}`;
+
+      // Fetch top players from leaderboard
+      fetchTopPlayers();
+    });
 
     function logout() {
       localStorage.removeItem('username');
+      localStorage.removeItem('solvedQuestions');
       window.location.href = "index.html";
     }
-  </script>
 
+    // Function to fetch top players from leaderboard
+    async function fetchTopPlayers() {
+      try {
+        // In a real application, you would fetch from your API endpoint
+        // const response = await fetch('/api/leaderboard/top');
+        // const topPlayers = await response.json();
+        
+        // Mock data - replace with actual API call
+        const mockTopPlayers = [
+          { username: "CodeMaster42", score: 95 },
+          { username: "DevPro99", score: 92 },
+          { username: "ByteMe", score: 89 },
+          { username: "SyntaxKing", score: 87 },
+          { username: "AlgorithmAce", score: 85 }
+        ];
+        
+        displayTopPlayers(mockTopPlayers);
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+        document.getElementById('top-players').innerHTML = 
+          '<li>Error loading leaderboard. Please try again later.</li>';
+      }
+    }
+
+    function displayTopPlayers(players) {
+      const leaderboardList = document.getElementById('top-players');
+      leaderboardList.innerHTML = '';
+      
+      players.forEach((player, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${index + 1}. ${player.username}</span> - Score: ${player.score}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+  </script>
 </body>
 </html>

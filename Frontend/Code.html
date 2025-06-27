@@ -2,88 +2,471 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CodeMaster - Question List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CodeMaster - Questions</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 30px;
+      line-height: 1.6;
+      margin: 0 auto;
+      max-width: 800px;
+      padding: 20px;
     }
-  
-  .question {
-    margin: 10px 0;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    transition: background-color 0.3s ease;
-  }
-
-  .question:hover {
-    background-color: #e0e7ff;
-    cursor: pointer;
-  }
-  .question span {
-  display: block;
-  margin-top: 5px;
-  font-size: 14px;
-}
-
-</style>
-
-
+    .question {
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      position: relative;
+    }
+    .question:hover {
+      background-color: #f5f5f5;
+    }
+    .solved-badge {
+      color: #28a745;
+      margin-left: 10px;
+    }
+    .reset-btn {
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      padding: 3px 8px;
+      font-size: 12px;
+      background-color: #f8f9fa;
+      color: #dc3545;
+      border: 1px solid #dc3545;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .reset-btn:hover {
+      background-color: #dc3545;
+      color: white;
+    }
+    #leaderboard-btn {
+      display: flex;
+      justify-content: center;
+      align-items:center;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #leaderboard-btn:hover {
+      background-color: #218838;
+    }
+    #leaderboard-btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error-message {
+      color: #dc3545;
+      margin-top: 10px;
+    }
+    .success-message {
+      color: #28a745;
+      margin-top: 10px;
+    }
+    .question.solved {
+      background-color: #e8f5e9;
+      border-left: 4px solid #28a745;
+    }
+    .user-display {
+      margin: 15px 0;
+      font-weight: bold;
+      text-align: right;
+    }
+    #reset-data-btn {
+      margin-top: 10px;
+      padding: 8px 15px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button
+    {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+     .logo-banner {
+      background-image: url('CodeMaster.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position:left;
+      width: 90px;
+      height: 90px;
+      margin: 20px left;
+    }
+  </style>
 </head>
 <body>
+  <div class="logo-banner"></div>
+  <div class="user-display">Welcome, <span id="username-display"></span></div>
   <h2>Select a Question</h2>
   <div id="question-list"></div>
-  <button id="leaderboard-btn" style="display:block; margin-top: 20px; padding: 10px 20px; font-size: 16px; background-color: green; color: white; border: none; border-radius: 6px; cursor: pointer;">
-  Proceed to Leaderboard
-</button>
 
+  <button id="leaderboard-btn" disabled>
+    <span id="btn-text">Submit</span>
+    <span id="remaining-display"> (5 more to solve)</span>
+    <span id="weight-display"> - Current Weight: 0</span>
+  </button>
+  <button id="reset-data-btn">Reset All My Data</button>
+   <button onclick="window.location.href='home.html'">Home</button>
+  <div class="error-message" id="error-message"></div>
+  <div class="success-message" id="success-message"></div>
 
- <script>
-  const questions = [
-    "Write a code to test whether the given number is even or odd",
-    "Generate the Fibonacci series up to n terms",
-    "Write a code for multiplication tables from 2 to 10 (format: 2 x 1 = 2)",
-    "Calculate the factorial of a number",
-    "Reverse a string",
-    "Check whether a number is prime",
-    "Find the largest of three numbers",
-    "Check if a string is a palindrome"
-  ];
-
-  const listContainer = document.getElementById("question-list");
-
-  // Get array of solved question indices from localStorage
-  const solvedQuestions = JSON.parse(localStorage.getItem("solvedQuestions") || "[]");
-
-  questions.forEach((q, index) => {
-    const div = document.createElement("div");
-    div.className = "question";
-
-    let content = `<strong>Q${index + 1}:</strong> ${q}`;
+  <script>
+    // Display username from localStorage
+    const username = localStorage.getItem('username');
+    document.getElementById('username-display').textContent = username || 'Guest';
     
-    if (solvedQuestions.includes(index)) {
-      content += `<span style="color: green; font-weight: bold; display: block; margin-top: 5px;">✅ Solved</span>`;
+    // Fixed questions array with sequential IDs
+    const questions = [
+      { id: 0, title: "Check if a Number is Even or Odd", language: "python" },
+      { id: 1, title: "Generate the Fibonacci Series", language: "python" },
+      { id: 7, title: "Check if string is Palindrome", language: "python" },
+      { id: 3, title: "Calculate Factorial of a Number", language: "python" },
+      { id: 4, title: "Reverse a String", language: "python" },
+      { id: 6, title: "Find the Largest of Three Numbers", language: "python" },
+      { id: 5, title: "Check if a Number is Prime", language: "python" }
+    ];
+    
+    const leaderboardBtn = document.getElementById('leaderboard-btn');
+    const btnText = document.getElementById('btn-text');
+    const remainingDisplay = document.getElementById('remaining-display');
+    const weightDisplay = document.getElementById('weight-display');
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+    const resetDataBtn = document.getElementById('reset-data-btn');
+    const API_BASE_URL = 'http://localhost:3000';
+
+    // Track reset questions
+    let resetQuestions = JSON.parse(localStorage.getItem('resetQuestions') || '[]');
+
+    // Initialize the application
+    function init() {
+      renderQuestions();
+      updateSolvedBadges();
+      
+      // Set initial button state
+      leaderboardBtn.onclick = submitSolvedQuestions;
+      
+      // Check for success message from question page
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('solved')) {
+        successMessage.textContent = 'Question solved successfully!';
+        setTimeout(() => successMessage.textContent = '', 3000);
+      }
     }
 
-    div.innerHTML = content;
+    function renderQuestions() {
+      const questionList = document.getElementById('question-list');
+      questionList.innerHTML = '';
 
-    div.onclick = () => {
-      window.location.href = `question.html?id=${index}`;
-    };
+      questions.forEach((q, index) => {
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.setAttribute('data-id', q.id);
+        
+        div.innerHTML = `
+          <strong>Q${index + 1}:</strong> ${q.title}
+          <button class="reset-btn" data-id="${q.id}">Reset</button>
+        `;
+        
+        questionList.appendChild(div);
+      });
 
-    listContainer.appendChild(div);
-  });
-  const leaderboardBtn = document.getElementById("leaderboard-btn");
-if (solvedQuestions.length >= 5) {
-  leaderboardBtn.style.display = "block";
-  leaderboardBtn.onclick = () => {
-    window.location.href = "leaderboard.jsx";
-  };
-}
+      addEventListeners();
+    }
 
-</script>
+    function addEventListeners() {
+      document.querySelectorAll('.question').forEach(q => {
+        q.addEventListener('click', function (e) {
+          if (e.target.classList.contains('reset-btn')) return;
+          const id = parseInt(this.getAttribute('data-id'));
+          const question = questions.find(q => q.id === id);
+          localStorage.setItem('currentQuestion', JSON.stringify(question));
+          window.location.href = `question.html?id=${id}`;
+        });
+      });
 
+      document.querySelectorAll('.reset-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const id = parseInt(this.getAttribute('data-id'));
+          resetQuestion(id);
+        });
+      });
+
+      resetDataBtn.addEventListener('click', resetAllUserData);
+    }
+
+    function resetQuestion(id) {
+      // Add to reset questions list
+      if (!resetQuestions.includes(id)) {
+        resetQuestions.push(id);
+        localStorage.setItem('resetQuestions', JSON.stringify(resetQuestions));
+      }
+      
+      // Remove from solved questions
+      const solved = getSolvedQuestions();
+      const updated = solved.filter(qId => qId !== id);
+      localStorage.setItem('solvedQuestions', JSON.stringify(updated));
+      
+      // Remove the weight for this question
+      localStorage.removeItem(`question_${id}_weight`);
+      
+      // Remove from submitted questions if exists
+      const submitted = JSON.parse(localStorage.getItem('submittedQuestions') || '[]');
+      const updatedSubmitted = submitted.filter(q => q.id !== id);
+      localStorage.setItem('submittedQuestions', JSON.stringify(updatedSubmitted));
+      
+      updateSolvedBadges();
+      successMessage.textContent = 'Question reset successfully! It will be removed from the leaderboard.';
+      setTimeout(() => successMessage.textContent = '', 3000);
+    }
+
+    function resetAllUserData() {
+      // Clear all question-related data
+      localStorage.removeItem('solvedQuestions');
+      localStorage.removeItem('submittedQuestions');
+      localStorage.removeItem('resetQuestions');
+      questions.forEach(q => {
+        localStorage.removeItem(`question_${q.id}_weight`);
+      });
+      
+      resetQuestions = [];
+      updateSolvedBadges();
+      successMessage.textContent = 'All your question data has been reset!';
+      setTimeout(() => successMessage.textContent = '', 3000);
+    }
+
+    function updateSolvedBadges() {
+      const solved = getSolvedQuestions();
+      
+      document.querySelectorAll('.question').forEach(q => {
+        const id = parseInt(q.getAttribute('data-id'));
+        const isSolved = solved.includes(id);
+        
+        // Remove existing badge if any
+        const existingBadge = q.querySelector('.solved-badge');
+        if (existingBadge) {
+          existingBadge.remove();
+        }
+        
+        if (isSolved) {
+          const badge = document.createElement('span');
+          badge.className = 'solved-badge';
+          badge.textContent = '✅ Solved';
+          q.appendChild(badge);
+          q.classList.add('solved');
+        } else {
+          q.classList.remove('solved');
+        }
+      });
+
+      updateLeaderboardButton(solved.length);
+    }
+
+    function getSolvedQuestions() {
+      try {
+        const stored = localStorage.getItem('solvedQuestions');
+        if (!stored) return [];
+        
+        const parsed = JSON.parse(stored);
+        
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && typeof parsed[0] === 'object') {
+            return parsed.map(item => item.id);
+          }
+          return parsed;
+        }
+        return [];
+      } catch (e) {
+        console.error('Error reading solved questions:', e);
+        return [];
+      }
+    }
+
+    function calculateTotalWeight() {
+      const solvedIds = [...new Set(getSolvedQuestions())]; // Ensure unique IDs
+      return solvedIds.reduce((total, id) => {
+        const weight = parseInt(localStorage.getItem(`question_${id}_weight`)) || 0;
+        return total + weight;
+      }, 0);
+    }
+
+    function updateLeaderboardButton(solvedCount) {
+      const remaining = Math.max(0, 5 - solvedCount);
+      const totalWeight = calculateTotalWeight();
+      
+      // Update button state
+      leaderboardBtn.disabled = solvedCount < 5;
+      
+      // Update displays
+      btnText.textContent = 'Submit';
+      remainingDisplay.textContent = solvedCount >= 5 ? '' : ` (${remaining} more to solve)`;
+      weightDisplay.textContent = ` - ${solvedCount >= 5 ? 'Total' : 'Current'} Weight: ${totalWeight}`;
+      
+      // Check if these questions have already been submitted
+      const submittedQuestions = JSON.parse(localStorage.getItem('submittedQuestions') || '[]');
+      const solvedIds = getSolvedQuestions();
+      const allSubmitted = solvedIds.every(id => submittedQuestions.some(q => q.id === id));
+      
+      if (allSubmitted && solvedCount >= 5) {
+        btnText.textContent = 'View Leaderboard';
+        remainingDisplay.textContent = '';
+        weightDisplay.textContent = ` - Your Total Weight: ${totalWeight}`;
+        leaderboardBtn.onclick = () => { window.location.href = "leaderboard.html"; };
+      } else {
+        leaderboardBtn.onclick = submitSolvedQuestions;
+      }
+    }
+
+    async function submitSolvedQuestions() {
+      leaderboardBtn.disabled = true;
+      leaderboardBtn.innerHTML = 'Submitting <span class="loading"></span>';
+      errorMessage.textContent = '';
+      successMessage.textContent = '';
+
+      try {
+          const username = localStorage.getItem('username') || `Anonymous_${Math.floor(Math.random() * 10000)}`;
+          const solvedIds = [...new Set(getSolvedQuestions())];
+          
+          if (solvedIds.length === 0) {
+              throw new Error('No solved questions to submit');
+          }
+
+          // Get current solved questions with weights (excluding reset questions)
+          const currentQuestions = solvedIds
+            .filter(id => !resetQuestions.includes(id))
+            .map(id => {
+              const question = questions.find(q => q.id === id);
+              const weight = parseInt(localStorage.getItem(`question_${id}_weight`)) || 1;
+              return {
+                  id,
+                  title: question.title,
+                  weight,
+                  timestamp: new Date().toISOString()
+              };
+          });
+
+          // Get previously submitted questions
+          const previousSubmissions = JSON.parse(localStorage.getItem('submittedQuestions') || '[]');
+          
+          // Create a map to track which questions need updates
+          const needsUpdate = [];
+          const finalSubmissions = [...previousSubmissions];
+
+          currentQuestions.forEach(question => {
+              const existing = previousSubmissions.find(sub => sub.id === question.id);
+              
+              if (!existing) {
+                  // New question - needs to be submitted
+                  needsUpdate.push({
+                      ...question,
+                      action: 'create'
+                  });
+                  finalSubmissions.push(question);
+              } else if (existing.weight !== question.weight) {
+                  // Weight changed - needs update
+                  needsUpdate.push({
+                      ...question,
+                      action: 'update'
+                  });
+                  // Update in final submissions
+                  const index = finalSubmissions.findIndex(q => q.id === question.id);
+                  if (index !== -1) {
+                      finalSubmissions[index] = question;
+                  }
+              }
+          });
+
+          // Also remove any submissions for reset questions
+          const cleanedSubmissions = finalSubmissions.filter(q => !resetQuestions.includes(q.id));
+          
+          if (needsUpdate.length === 0 && cleanedSubmissions.length === previousSubmissions.length) {
+              successMessage.textContent = 'All questions are already up-to-date!';
+              leaderboardBtn.disabled = false;
+              leaderboardBtn.innerHTML = 'View Leaderboard';
+              leaderboardBtn.onclick = () => { window.location.href = "leaderboard.html"; };
+              return;
+          }
+
+          // Submit updates to server
+          const results = await Promise.all(
+              needsUpdate.map(question => {
+                  return fetch(`${API_BASE_URL}/api/submissions`, {
+                      method: 'POST',
+                      headers: { 
+                          'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                          username,
+                          questionId: question.id,
+                          questionTitle: question.title,
+                          weight: question.weight,
+                          timestamp: question.timestamp,
+                          action: question.action
+                      })
+                  }).then(async res => {
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.message || 'Submission failed');
+                      return data;
+                  });
+              })
+          );
+
+          // Save the complete current state (excluding reset questions)
+          localStorage.setItem('submittedQuestions', JSON.stringify(cleanedSubmissions));
+
+          successMessage.textContent = 'Leaderboard updated successfully!';
+          setTimeout(() => {
+              window.location.href = "leaderboard.html";
+          }, 1500);
+
+      } catch (error) {
+          console.error('Submission failed:', error);
+          errorMessage.textContent = `Failed to update leaderboard: ${error.message}`;
+          leaderboardBtn.disabled = false;
+          leaderboardBtn.innerHTML = 'Try Again';
+          updateLeaderboardButton(getSolvedQuestions().length);
+      }
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>

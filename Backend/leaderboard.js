@@ -3,75 +3,263 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-import Leaderboard from './components/leaderboard';
+// Enhanced CORS configuration
+// In server.js
+app.use(cors({
+  origin: true, // Reflects the request origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
+// Body parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ✅ MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/CodeMaster', {
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/codeMasterDB';
+
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 })
-.then(() => console.log('MongoDB connected ✅'))
-.catch(err => console.error('MongoDB connection error ❌', err));
-
-// ✅ Mongoose Schema and Model
-const SolutionSchema = new mongoose.Schema({
-  questionNumber: Number,
-  complexity: Number
+.then(() => console.log('MongoDB Connected Successfully'))
+.catch(err => {
+  console.error('MongoDB Connection Error:', err);
+  process.exit(1);
 });
 
-const LeaderboardSchema = new mongoose.Schema({
-  username: String,
-  solutions: [SolutionSchema]
+// Schema
+const submissionSchema = new mongoose.Schema({
+  username: { 
+    type: String, 
+    required: [true, 'Username is required'],
+    trim: true,
+    maxlength: [50, 'Username cannot be more than 50 characters']
+  },
+  questionTitle: { 
+    type: String, 
+    required: [true, 'Question title is required'],
+    trim: true
+  },
+  weight: { 
+    type: Number, 
+    default: 1,
+    min: [1, 'Weight must be at least 1']
+  },
+  timestamp: { 
+    type: Date, 
+    default: Date.now,
+    index: true
+  }
+}, { timestamps: true });
+
+// Indexes
+submissionSchema.index({ username: 1 });
+submissionSchema.index({ questionTitle: 1 });
+
+const Submission = mongoose.model('Submission', submissionSchema);
+
+// Routes
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK',
+    dbState: mongoose.connection.readyState,
+    timestamp: new Date()
+  });
 });
 
-const Leaderboard = mongoose.model('Leaderboard', LeaderboardSchema);
-
-// ✅ API to Submit Solution
-app.post('/api/submit-solution', async (req, res) => {
-  const { username, questionNumber, complexity } = req.body;
-
+// In your server.js (backend)
+app.post('/api/submissions', async (req, res) => {
   try {
-    let user = await Leaderboard.findOne({ username });
-
-    if (!user) {
-      user = new Leaderboard({ username, solutions: [] });
+   
+    
+    // Validate required fields
+    if (!req.body.questionTitle) {
+      return res.status(400).json({
+        success: false,
+        message: 'Question title is required',
+        received: req.body
+      });
     }
 
-    const existingSolution = user.solutions.find(
-      sol => sol.questionNumber === questionNumber
-    );
+    // Create submission with anonymous username if not provided
+    const submission = new Submission({
+      username: req.body.username || `Anonymous_${Math.floor(Math.random() * 10000)}`,
+      questionTitle: req.body.questionTitle,
+      questionId: req.body.questionId, 
+      weight: req.body.weight 
+    });
 
-    if (existingSolution) {
-      existingSolution.complexity = complexity;
-    } else {
-      user.solutions.push({ questionNumber, complexity });
-    }
+    // Attempt to save
+    const savedSubmission = await submission.save();
+    
+    console.log('Saved submission:', savedSubmission); // Debug log
+    
+    return res.status(201).json({
+      success: true,
+      message: 'Submission saved successfully',
+      data: savedSubmission
+    });
 
-    await user.save();
-    res.status(200).json({ message: '✅ Solution saved!' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '❌ Server error' });
+    console.error('Error details:', {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      code: err.code,
+      keyPattern: err.keyPattern,
+      keyValue: err.keyValue
+    });
+    
+    // Handle specific MongoDB errors
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: Object.values(err.errors).map(e => e.message)
+      });
+    }
+
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Duplicate submission detected'
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to save submission',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
-// ✅ API to Fetch Leaderboard
+// Leaderboard route
+// Updated leaderboard endpoint
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const allUsers = await Leaderboard.find({});
-    res.json(allUsers);
+    // Get latest submissions for each question per user
+    const latestSubmissions = await Submission.aggregate([
+      { $sort: { timestamp: -1 } },
+      {
+        $group: {
+          _id: {
+            username: "$username",
+            questionTitle: "$questionTitle"
+          },
+          doc: { $first: "$$ROOT" }
+        }
+      },
+      { $replaceRoot: { newRoot: "$doc" } }
+    ]);
+
+    // Calculate leaderboard scores
+    const leaderboardData = await Submission.aggregate([
+      {
+        $match: { 
+          _id: { $in: latestSubmissions.map(s => s._id) }
+        }
+      },
+      {
+        $group: {
+          _id: "$username",
+          totalScore: { $sum: "$weight" },
+          questionCount: { $sum: 1 },
+          lastSubmission: { $max: "$timestamp" },
+          submissions: {
+            $push: {
+              questionTitle: "$questionTitle",
+              weight: "$weight"
+            }
+          }
+        }
+      },
+      { $sort: { totalScore: -1, lastSubmission: 1 } },
+      {
+        $project: {
+          _id: 0,
+          username: "$_id",
+          totalScore: 1,
+          questionCount: 1,
+          lastSubmission: 1,
+          submissions: 1
+        }
+      }
+    ]);
+
+    // Ensure no null/undefined usernames
+    const cleanLeaderboard = leaderboardData.map(user => ({
+      ...user,
+      username: user.username || 'Invalid User' // Fallback for any null usernames
+    }));
+
+    res.json({ 
+      success: true, 
+      data: cleanLeaderboard 
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '❌ Error fetching leaderboard' });
+    console.error('Leaderboard error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch leaderboard'
+    });
   }
 });
+app.post('/api/submissions', async (req, res) => {
+  try {
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database not connected'
+        
+      });
+      
+    }
 
-// ✅ Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  } catch (err) {
+    // Error handling
+  }
+});
+// Error handling
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled Error:', err);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`MongoDB URI: ${MONGODB_URI}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+});
+
+// Graceful shutdown
+['SIGINT', 'SIGTERM'].forEach(signal => {
+  process.on(signal, () => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      mongoose.connection.close(false, () => {
+        console.log('Server and MongoDB connection closed');
+        process.exit(0);
+      });
+    });
+  });
 });

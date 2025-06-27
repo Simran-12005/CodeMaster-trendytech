@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeMaster Leaderboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+    .medal-gold { color: gold; font-weight: bold; }
+    .medal-silver { color: silver; font-weight: bold; }
+    .medal-bronze { color: #cd7f32; font-weight: bold; }
+    .btn {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    .error {
+      color: #d32f2f;
+      text-align: center;
+      padding: 20px;
+    }
+    .question-item {
+      display: block;
+      margin: 3px 0;
+      padding: 3px 5px;
+      background-color: #f0f0f0;
+      border-radius: 3px;
+    }
+    .question-weight {
+      font-weight: bold;
+      color: #4CAF50;
+      margin-left: 5px;
+    }
+    .today-badge {
+      background-color: #ffeb3b;
+      color: #000;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.8em;
+      margin-left: 5px;
+    }
+    .last-active {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .today-activity {
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .questions-container {
+      max-height: 150px;
+      overflow-y: auto;
+      margin-top: 5px;
+    }
+    .total-weight {
+      font-weight: bold;
+      color: #333;
+    }
+    .you-badge {
+      background-color: #2196F3;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.8em;
+      margin-left: 5px;
+    }
+    
+    button
+    {
+background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+
+    }
+    .logo-banner {
+      background-image: url('CodeMaster.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position:left;
+      width: 90px;
+      height: 90px;
+      margin: 20px left;
+    }
+  </style>
+</head>
+<body>
+   <div class="logo-banner"></div>
+  <div class="container">
+    <h1>CodeMaster Leaderboard</h1>
+    <button class="btn" id="refreshBtn">Refresh Data</button>
+    <button onclick="window.location.href='Code.html'">Back to Questions</button>
+    <div id="resetNotification" class="reset-notification"></div>
+    
+    <h2>Leaderboard <span class="today-badge">Updated: <span id="currentTime"></span></span></h2>
+    <table id="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Username</th>
+          <th>Questions Solved</th>
+          <th>Total Weight</th>
+          <th>Last Activity</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/leaderboard';
+    const refreshBtn = document.getElementById('refreshBtn');
+    const leaderboardBody = document.getElementById('leaderboard-body');
+    const currentTimeSpan = document.getElementById('currentTime');
+    const resetNotification = document.getElementById('resetNotification');
+
+    // Track reset questions and current user's solved questions
+    let resetQuestions = JSON.parse(localStorage.getItem('resetQuestions') || '[]');
+    let solvedQuestions = JSON.parse(localStorage.getItem('solvedQuestions') || '[]');
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Ensure username exists
+      if (!localStorage.getItem('username')) {
+        localStorage.setItem('username', `User_${Math.floor(Math.random() * 10000)}`);
+      }
+      
+      updateCurrentTime();
+      setInterval(updateCurrentTime, 1000);
+      
+      refreshBtn.addEventListener('click', async () => {
+        await loadLeaderboard();
+      });
+      
+      await loadLeaderboard();
+      
+      // Show reset notification if there are reset questions
+      if (resetQuestions.length > 0) {
+        showResetNotification();
+      }
+    });
+
+    function showResetNotification() {
+      resetNotification.textContent = `Note: ${resetQuestions.length} question(s) have been reset and are hidden from the leaderboard.`;
+      resetNotification.style.display = 'none';
+    }
+
+    function updateCurrentTime() {
+      currentTimeSpan.textContent = new Date().toLocaleTimeString();
+    }
+
+    // Get weights from local storage
+    function getQuestionWeights() {
+      try {
+        const weights = {};
+        const questionTitles = [
+          "Check if a Number is Even or Odd",
+          "Generate the Fibonacci Series",
+          "Check if string is Palindrome",
+          "Calculate Factorial of a Number",
+          "Reverse a String",
+          "Find the Largest of Three Numbers",
+          "Check if a Number is Prime"
+        ];
+        
+        for (let i = 0; i < questionTitles.length; i++) {
+          const weight = localStorage.getItem(`question_${i}_weight`);
+          if (weight) {
+            weights[questionTitles[i]] = parseInt(weight) || 1;
+          }
+        }
+        return weights;
+      } catch {
+        return {};
+      }
+    }
+
+    async function loadLeaderboard() {
+      try {
+        leaderboardBody.innerHTML = '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+        
+        const response = await fetch(API_URL);
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to load leaderboard');
+        }
+        
+        if (!result.data || result.data.length === 0) {
+          leaderboardBody.innerHTML = '<tr><td colspan="5">No data available</td></tr>';
+          return;
+        }
+        
+        // Filter the data to only show currently solved questions for the current user
+        const filteredData = filterLeaderboardData(result.data);
+        renderLeaderboard(filteredData);
+      } catch (error) {
+        leaderboardBody.innerHTML = `<tr><td colspan="5" class="error">${error.message}</td></tr>`;
+      }
+    }
+
+    function filterLeaderboardData(data) {
+      const currentUsername = localStorage.getItem('username');
+      const questionWeights = getQuestionWeights();
+      
+      return data.map(user => {
+        // For the current user, filter to only show non-reset, currently solved questions
+        if (isCurrentUser(user)) {
+          const filteredSubmissions = user.submissions.filter(sub => {
+            const questionId = getQuestionIdFromTitle(sub.questionTitle);
+            return solvedQuestions.includes(questionId) && !resetQuestions.includes(questionId);
+          });
+          
+          return {
+            ...user,
+            submissions: filteredSubmissions,
+            totalWeight: filteredSubmissions.reduce((sum, sub) => {
+              const weight = sub.weight || questionWeights[sub.questionTitle] || 1;
+              return sum + weight;
+            }, 0)
+          };
+        }
+        
+        // For other users, just filter out reset questions
+        const filteredSubmissions = user.submissions.filter(sub => {
+          const questionId = getQuestionIdFromTitle(sub.questionTitle);
+          return !resetQuestions.includes(questionId);
+        });
+        
+        return {
+          ...user,
+          submissions: filteredSubmissions,
+          totalWeight: filteredSubmissions.reduce((sum, sub) => {
+            const weight = sub.weight || questionWeights[sub.questionTitle] || 1;
+            return sum + weight;
+          }, 0)
+        };
+      }).filter(user => user.submissions.length > 0);
+    }
+
+    function getQuestionIdFromTitle(title) {
+      const questionTitles = [
+        "Check if a Number is Even or Odd",      // 0
+        "Generate the Fibonacci Series",         // 1
+        "Check if string is Palindrome",         // 2
+        "Calculate Factorial of a Number",       // 3
+        "Reverse a String",                      // 4
+        "Find the Largest of Three Numbers",     // 5
+        "Check if a Number is Prime"             // 6
+      ];
+      return questionTitles.indexOf(title);
+    }
+
+    function renderLeaderboard(data) {
+      leaderboardBody.innerHTML = '';
+      
+      if (data.length === 0) {
+        leaderboardBody.innerHTML = '<tr><td colspan="5">No active submissions found</td></tr>';
+        return;
+      }
+      
+      // Sort by total weight (descending)
+      data.sort((a, b) => b.totalWeight - a.totalWeight);
+      
+      data.forEach((user, index) => {
+        const row = document.createElement('tr');
+        
+        // Medal classes for top 3
+        let medalClass = '';
+        if (index === 0) medalClass = 'medal-gold';
+        else if (index === 1) medalClass = 'medal-silver';
+        else if (index === 2) medalClass = 'medal-bronze';
+        
+        // Get today's submissions
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todaysSubmissions = user.submissions.filter(sub => {
+          try {
+            return sub.timestamp && new Date(sub.timestamp) >= today;
+          } catch (e) {
+            return false;
+          }
+        });
+        
+        // Format questions list with weights
+        const questionsList = user.submissions.map(sub => {
+          let isToday = false;
+          try {
+            isToday = sub.timestamp && new Date(sub.timestamp) >= today;
+          } catch (e) {
+            isToday = false;
+          }
+          
+          const weight = sub.weight || getQuestionWeights()[sub.questionTitle] || 1;
+          
+          return `
+            <span class="question-item ${isToday ? 'today-activity' : ''}">
+              ${sub.questionTitle || 'Untitled Question'}
+              <span class="question-weight">(${weight})</span>
+              ${isToday ? '↑' : ''}
+            </span>
+          `;
+        }).join('');
+        
+        row.innerHTML = `
+          <td class="${medalClass}">${index + 1}</td>
+          <td>
+            ${user.displayName || user.username || (user._id ? user._id.toString() : 'Unknown User')}
+            ${isCurrentUser(user) ? '<span class="you-badge">(You)</span>' : ''}
+          </td>
+          <td>
+            <div>${user.submissions.length} questions</div>
+            <div class="questions-container">
+              ${questionsList}
+            </div>
+          </td>
+          <td class="total-weight">${user.totalWeight}</td>
+          <td>
+            ${formatLastActivity(user.lastSubmission)}
+            ${todaysSubmissions.length > 0 ? 
+              `<div class="last-active">Today: ${todaysSubmissions.length} solves</div>` : ''}
+          </td>
+        `;
+        leaderboardBody.appendChild(row);
+      });
+    }
+
+    function isCurrentUser(user) {
+      const currentUsername = localStorage.getItem('username');
+      if (!currentUsername) return false;
+      
+      return (user.username && user.username === currentUsername) || 
+             (user._id && user._id.toString().includes(currentUsername));
+    }
+
+    function formatLastActivity(timestamp) {
+      if (!timestamp) return 'Never';
+      
+      try {
+        const now = new Date();
+        const lastActive = new Date(timestamp);
+        const diffHours = Math.floor((now - lastActive) / (1000 * 60 * 60));
+        
+        if (diffHours < 1) {
+          const diffMinutes = Math.floor((now - lastActive) / (1000 * 60));
+          return `${diffMinutes}m ago`;
+        } else if (diffHours < 24) {
+          return `${diffHours}h ago`;
+        } else {
+          return lastActive.toLocaleDateString();
+        }
+      } catch (e) {
+        return 'Invalid date';
+      }
+    }
+
+    // Function to reset a question (call this from your question page)
+    function resetQuestion(id) {
+      // Add to reset questions list if not already there
+      if (!resetQuestions.includes(id)) {
+        resetQuestions.push(id);
+        localStorage.setItem('resetQuestions', JSON.stringify(resetQuestions));
+      }
+      
+      // Remove from solved questions
+      solvedQuestions = solvedQuestions.filter(qId => qId !== id);
+      localStorage.setItem('solvedQuestions', JSON.stringify(solvedQuestions));
+      
+      // Remove the weight for this question
+      localStorage.removeItem(`question_${id}_weight`);
+      
+      // Update UI and refresh leaderboard
+      loadLeaderboard();
+      showResetNotification();
+    }
+
+    function resetAllUserData() {
+      // Clear all question-related data
+      solvedQuestions = [];
+      localStorage.removeItem('solvedQuestions');
+      
+      // Clear question weights
+      for (let i = 0; i < 7; i++) {
+        localStorage.removeItem(`question_${i}_weight`);
+      }
+      
+      // Clear reset questions
+      resetQuestions = [];
+      localStorage.removeItem('resetQuestions');
+      resetNotification.style.display = 'none';
+      
+      // Update UI
+      loadLeaderboard();
+    }
+
+    function getSolvedQuestions() {
+      try {
+        const stored = localStorage.getItem('solvedQuestions');
+        if (!stored) return [];
+        
+        const parsed = JSON.parse(stored);
+        
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && typeof parsed[0] === 'object') {
+            return parsed.map(item => item.id);
+          }
+          return parsed;
+        }
+        return [];
+      } catch (e) {
+        console.error('Error reading solved questions:', e);
+        return [];
+      }
+    }
+  </script>
+</body>
+</html>

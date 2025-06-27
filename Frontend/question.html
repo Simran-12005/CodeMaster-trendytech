@@ -17,7 +17,7 @@
     button {
       padding: 10px;
       margin-top: 10px;
-      background-color: #007bff;
+      background-color: green;
       color: white;
       border: none;
       border-radius: 6px;
@@ -43,23 +43,57 @@
     }
     #debug-console {
       margin-top: 15px;
-      background:black;
+      background: black;
       padding: 12px;
       border-radius: 6px;
       white-space: pre-wrap;
       font-family: monospace;
-      color:green;
+      color: green;
       display: none;
       border: 1px solid #ffaaaa;
+    }
+    #question-description {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+    .logo-banner {
+      background-image: url('CodeMaster.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position:left;
+      width: 90px;
+      height: 90px;
+      margin: 20px left;
     }
   </style>
 </head>
 <body>
+   <div class="logo-banner"></div>
   <h2 id="question-title">Write Code</h2>
-  <p id="question-description"></p>
+  <div id="question-description"></div>
 
   <textarea id="code" placeholder="Write your code here..."></textarea><br>
-  <button onclick="submitCode()">Submit Code</button>
+  <button id="submit-btn" onclick="submitCode()">Submit Code</button>
 
   <div id="result">
     <p><strong>Status:</strong> <span id="status">--</span></p>
@@ -71,62 +105,85 @@
   </div>
 
   <div id="debug-console"></div>
-<script>
+  <script>
     const questions = [
       {
+        id: 0,
         title: "Check if a Number is Even or Odd",
         description: "Accept an integer input from the user. Determine whether it is divisible by 2 or not. Print 'Even' if divisible by 2, else print 'Odd'.",
         language: "python"
       },
       {
+        id: 1,
         title: "Generate the Fibonacci Series",
         description: "Take a number 'n' as input to generate the Fibonacci sequence. Start from 0 and 1 and compute the next terms by summing the previous two. Display all n terms separated by spaces.",
         language: "python"
       },
       {
+        id: 2,
         title: "Multiplication Table from 2 to 10",
         description: "Generate multiplication tables from 2 to 10. Each table should show results from 1 to 10 in the format: 2 x 1 = 2. Print all tables clearly for each number.",
         language: "python"
       },
       {
+        id: 3,
         title: "Calculate Factorial of a Number",
         description: "Read an integer input from the user. Compute the factorial by multiplying all positive integers up to that number. Print the resulting factorial value.",
         language: "python"
       },
       {
+        id: 4,
         title: "Reverse a String",
         description: "Take a string as input from the user. Reverse the order of characters manually or using slicing. Output the reversed string.",
         language: "python"
       },
       {
+        id: 5,
         title: "Check if a Number is Prime",
         description: "Accept an integer from the user. Check if it is only divisible by 1 and itself. Print 'Prime' if it has no other divisors, else print 'Not Prime'.",
         language: "python"
       },
       {
+        id: 6,
         title: "Find the Largest of Three Numbers",
         description: "Take three integers as input. Compare them using conditional statements. Output the largest number among the three.",
         language: "python"
       },
       {
+        id: 7,
         title: "Check if a String is a Palindrome",
         description: "Read a string input from the user. Check whether it reads the same backward as forward. Print 'Palindrome' if it does, otherwise print 'Not Palindrome'.",
         language: "python"
       }
     ];
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = parseInt(urlParams.get("id"));
-    const question = questions[id];
+    // Initialize the page with the correct question
+    function initializePage() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        let id = parseInt(urlParams.get("id")) || 0;
+        
+        // Validate ID range
+        if (id < 0 || id >= questions.length) {
+          id = 0;
+          window.history.replaceState(null, null, `?id=${id}`);
+        }
 
-    if (!question) {
-      alert("Invalid question ID.");
-      window.location.href = "/anything.txt";
+        const question = questions[id];
+        if (!question) {
+          throw new Error("Question not found");
+        }
+
+        document.getElementById("question-title").innerText = question.title;
+        document.getElementById("question-description").innerText = question.description;
+      } catch (error) {
+        console.error("Initialization error:", error);
+        document.getElementById("question-title").innerText = "Error Loading Question";
+        document.getElementById("question-description").innerText = "There was an error loading the question. Please refresh the page.";
+      }
     }
 
-    document.getElementById("question-title").innerText = question.title;
-    document.getElementById("question-description").innerText = question.description;
-
+    // Get test cases for the current question
     function getTestCasesForQuestion(title) {
       const testCasesMap = {
         "Check if a Number is Even or Odd": [
@@ -175,145 +232,241 @@
           { input: "refer", expected: "Palindrome" }, { input: "check", expected: "Not Palindrome" }
         ],
         "Multiplication Table from 2 to 10": [
-          { input: "", expected: "2 4 6 8 10 12 14 16 18 20" },
-          { input: "", expected: "3 6 9 12 15 18 21 24 27 30" },
-          { input: "", expected: "4 8 12 16 20 24 28 32 36 40" },
-          { input: "", expected: "5 10 15 20 25 30 35 40 45 50" },
-          { input: "", expected: "6 12 18 24 30 36 42 48 54 60" },
-          { input: "", expected: "7 14 21 28 35 42 49 56 63 70" },
-          { input: "", expected: "8 16 24 32 40 48 56 64 72 80" },
-          { input: "", expected: "9 18 27 36 45 54 63 72 81 90" },
-          { input: "", expected: "10 20 30 40 50 60 70 80 90 100" },
-          { input: "", expected: "11 22 33 44 55 66 77 88 99 110" }
+          { input: "2", expected: "2 x 1 = 2\n2 x 2 = 4\n2 x 3 = 6\n2 x 4 = 8\n2 x 5 = 10\n2 x 6 = 12\n2 x 7 = 14\n2 x 8 = 16\n2 x 9 = 18\n2 x 10 = 20" },
+          { input: "3", expected: "3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15\n3 x 6 = 18\n3 x 7 = 21\n3 x 8 = 24\n3 x 9 = 27\n3 x 10 = 30" },
+          { input: "4", expected: "4 x 1 = 4\n4 x 2 = 8\n4 x 3 = 12\n4 x 4 = 16\n4 x 5 = 20\n4 x 6 = 24\n4 x 7 = 28\n4 x 8 = 32\n4 x 9 = 36\n4 x 10 = 40" },
+          { input: "5", expected: "5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15\n5 x 4 = 20\n5 x 5 = 25\n5 x 6 = 30\n5 x 7 = 35\n5 x 8 = 40\n5 x 9 = 45\n5 x 10 = 50" },
+          { input: "6", expected: "6 x 1 = 6\n6 x 2 = 12\n6 x 3 = 18\n6 x 4 = 24\n6 x 5 = 30\n6 x 6 = 36\n6 x 7 = 42\n6 x 8 = 48\n6 x 9 = 54\n6 x 10 = 60" },
+          { input: "7", expected: "7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70" },
+          { input: "8", expected: "8 x 1 = 8\n8 x 2 = 16\n8 x 3 = 24\n8 x 4 = 32\n8 x 5 = 40\n8 x 6 = 48\n8 x 7 = 56\n8 x 8 = 64\n8 x 9 = 72\n8 x 10 = 80" },
+          { input: "9", expected: "9 x 1 = 9\n9 x 2 = 18\n9 x 3 = 27\n9 x 4 = 36\n9 x 5 = 45\n9 x 6 = 54\n9 x 7 = 63\n9 x 8 = 72\n9 x 9 = 81\n9 x 10 = 90" },
+          { input: "10", expected: "10 x 1 = 10\n10 x 2 = 20\n10 x 3 = 30\n10 x 4 = 40\n10 x 5 = 50\n10 x 6 = 60\n10 x 7 = 70\n10 x 8 = 80\n10 x 9 = 90\n10 x 10 = 100" }
         ]
       };
       return testCasesMap[title] || [];
     }
 
-    async function submitCode() {
-  const code = document.getElementById("code").value;
-  const language = question.language;
-  const questionTitle = question.title;
-  const id = parseInt(new URLSearchParams(window.location.search).get("id"));
-
-  const debugConsole = document.getElementById("debug-console");
-  debugConsole.style.display = "none";
-  debugConsole.innerText = "";
-
-  document.getElementById("complexity-row").style.display = "none";
-
-  if (!code.trim()) {
-    alert("Please enter your code before submitting.");
-    return;
-  }
-
-  try {
-    const runResponse = await fetch("http://localhost:5000/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code,
-        language,
-        testCases: getTestCasesForQuestion(questionTitle)
-      })
-    });
-
-    const runData = await runResponse.json();
-
-    const statusSpan = document.getElementById("status");
-    const verdicts = document.getElementById("verdicts");
-
-    verdicts.innerText = `${runData.passed} / ${runData.total} Test Cases Passed`;
-
-    let solved = JSON.parse(localStorage.getItem("solvedQuestions") || "[]");
-
-    if (runData.passed === runData.total) {
-      // ✅ All test cases passed
-      statusSpan.innerText = "✅ Solved";
-      statusSpan.style.color = "green";
-
-      // Save as solved
-      if (!solved.includes(id)) {
-        solved.push(id);
-        localStorage.setItem("solvedQuestions", JSON.stringify(solved));
-      }
-
-      // Show complexity only when solved
-      const analyzeResponse = await fetch("http://127.0.0.1:5000/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language, code })
-      });
-
-      const analyzeData = await analyzeResponse.json();
-      document.getElementById("complexity").innerText = analyzeData.weight || "N/A";
-      document.getElementById("complexity-row").style.display = "block";
-
-    } else {
-      // ❌ Not all test cases passed
-      statusSpan.innerText = "❌ Not Solved";
-      statusSpan.style.color = "red";
-
-      // Remove from solved list
-      if (solved.includes(id)) {
-        solved = solved.filter(qid => qid !== id);
-        localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+    // Get solved questions from localStorage
+    function getSolvedQuestions() {
+      try {
+        const stored = localStorage.getItem("solvedQuestions");
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error("Error reading from localStorage:", e);
+        return [];
       }
     }
 
-    document.getElementById("result").style.display = "block";
-
-    
-   // 💥 Show debug errors if available
-if (runData.stderr || runData.error) {
-  // Clean the error message to remove file paths
-  const rawError = runData.stderr || runData.error;
-
-  // Use a regex to remove file paths (common formats like "/user/code/file.c:10:..." or "at file.js:10")
-  const cleanedError = rawError
-    .split('\n')                       // Split by line
-    .filter(line => !line.match(/\/.*\.c|\.py|\.js|\.cpp|\.java|\.ts|at .*\.js|at Module/)) // Remove file paths
-    .join('\n');                       // Rejoin filtered lines
-
-  debugConsole.innerText = `💥 Code Error:\n${cleanedError.trim()}`;
-  debugConsole.style.display = "block";
-
-  // Also remove from solved
-  if (solved.includes(id)) {
-    solved = solved.filter(qid => qid !== id);
-    localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+    // Save solved questions to localStorage
+    function saveSolvedQuestions(solved) {
+      try {
+        localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+      } catch (e) {
+        console.error("Error saving to localStorage", e);
+      }
+    }
+// This should be in your question.html code where you mark questions as solved
+function markQuestionAsSolved(questionId, weight) {
+  const solved = getSolvedQuestions();
+  if (!solved.includes(questionId)) {
+    solved.push(questionId);
+    localStorage.setItem('solvedQuestions', JSON.stringify(solved));
+    // Store the weight only once
+    localStorage.setItem(`question_${questionId}_weight`, weight);
   }
 }
+    // Main function to submit code
+    async function submitCode() {
+      const code = document.getElementById("code").value.trim();
+      const submitBtn = document.getElementById("submit-btn");
+      const debugConsole = document.getElementById("debug-console");
+      const resultDiv = document.getElementById("result");
+      
+      // Reset UI
+      debugConsole.style.display = "none";
+      debugConsole.innerText = "";
+      document.getElementById("complexity-row").style.display = "none";
+      resultDiv.style.display = "none";
+      
+      // Validate input
+      if (!code) {
+        alert("Please enter your code before submitting.");
+        return;
+      }
 
+      try {
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading"></span> Processing...';
 
-  } catch (err) {
-    // ❌ Backend or system error
-    document.getElementById("status").innerText = "❌ Error";
-    document.getElementById("status").style.color = "red";
-    document.getElementById("verdicts").innerText = "Error during execution or server unavailable.";
-    document.getElementById("result").style.display = "block";
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = parseInt(urlParams.get("id")) || 0;
+        const question = questions[id];
+        if (!question) {
+          throw new Error("Question not found");
+        }
 
-    debugConsole.innerText = `🚨 System Error:\n${err.message}`;
-    debugConsole.style.display = "block";
+        const language = question.language;
+        const questionTitle = question.title;
+        const testCases = getTestCasesForQuestion(questionTitle);
 
-    // Remove solved status on crash
-    let solved = JSON.parse(localStorage.getItem("solvedQuestions") || "[]");
-    if (solved.includes(id)) {
-      solved = solved.filter(qid => qid !== id);
-      localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+        // First run the code
+        let runData;
+        try {
+          const runResponse = await fetch("http://localhost:5000/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, language, testCases })
+          });
+
+          if (!runResponse.ok) {
+            throw new Error(`Server returned ${runResponse.status}: ${runResponse.statusText}`);
+          }
+
+          runData = await runResponse.json();
+        } catch (err) {
+          console.error("Run error:", err);
+          throw new Error("Could not connect to the code execution server. Please try again later.");
+        }
+
+        // Update UI with results
+        const statusSpan = document.getElementById("status");
+        const verdicts = document.getElementById("verdicts");
+
+        let verdictText = `${runData.passed} / ${runData.total} Test Cases Passed\n\n`;
+        
+        // Add detailed test case results if available
+        if (runData.results && runData.results.length > 0) {
+          runData.results.forEach((result, index) => {
+            verdictText += `Test Case ${index + 1}: ${result.passed ? "✅ Passed" : "❌ Failed"}\n`;
+            if (!result.passed) {
+              verdictText += `  Input: ${result.input}\n`;
+              verdictText += `  Expected: ${result.expected}\n`;
+              verdictText += `  Got: ${result.output}\n\n`;
+            }
+          });
+        }
+
+        verdicts.innerText = verdictText;
+
+        let solved = getSolvedQuestions();
+        const wasSolved = solved.includes(id);
+
+        if (runData.passed === runData.total) {
+          // ✅ All test cases passed
+          statusSpan.innerText = "✅ Solved";
+          statusSpan.className = "success";
+
+          // Save as solved if not already
+          if (!wasSolved) {
+            solved.push(id);
+            saveSolvedQuestions(solved);
+          }
+
+          // Get complexity analysis
+          try {
+            const analyzeResponse = await fetch("http://localhost:5000/analyze", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ language, code })
+            });
+
+            if (analyzeResponse.ok) {
+              const analyzeData = await analyzeResponse.json();
+               const calculatedWeight = analyzeData.weight || 1;
+                // Store weight with question ID in localStorage
+      localStorage.setItem(`question_${id}_weight`, calculatedWeight.toString());
+      
+             // Update UI
+            document.getElementById("complexity").innerText = calculatedWeight;
+            document.getElementById("complexity-row").style.display = "block";
+if (!wasSolved) {
+        solved.push(id);
+        saveSolvedQuestions(solved);
+}
+
+ // Submit to backend with proper question title
+            const submissionResponse = await fetch('/api/submissions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: localStorage.getItem('username') || `Anonymous_${Math.floor(Math.random() * 10000)}`,
+                questionTitle: questionTitle, // Use the correct title
+                questionId: id,
+                weight: calculatedWeight
+              })
+            });
+
+            if (!submissionResponse.ok) {
+              console.error('Failed to submit to leaderboard');
+              
+            }
+          }
+             
+          } catch (analyzeError) {
+            console.error("Complexity analysis failed:", analyzeError);
+          }
+
+        } else {
+          // ❌ Not all test cases passed
+          statusSpan.innerText = "❌ Not Solved";
+          statusSpan.className = "error";
+
+          // Remove from solved list if it was previously solved
+          if (wasSolved) {
+            solved = solved.filter(qid => qid !== id);
+            saveSolvedQuestions(solved);
+          }
+        }
+
+        resultDiv.style.display = "block";
+
+        // Show errors if any
+        if (runData.stderr || runData.error) {
+          const rawError = runData.stderr || runData.error;
+          // Clean error message by removing file paths
+          const cleanedError = rawError
+            .split('\n')
+            .filter(line => !line.match(/\/.*\.(c|py|js|cpp|java|ts)/))
+            .join('\n')
+            .trim();
+
+          debugConsole.innerText = `💥 Code Error:\n${cleanedError}`;
+          debugConsole.style.display = "block";
+           await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: localStorage.getItem('username') || `Anonymous_${Math.floor(Math.random() * 10000)}`,
+          questionTitle: questionTitle, // Include correct title for failed attempts
+          questionId: id,
+          weight: 0 // Or you can omit weight for failed attempts
+        })
+      });
     }
-  }
-}await fetch("http://localhost:3000/api/submit-solution", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    username: localStorage.getItem("username") || "Guest",
-    questionNumber: id,
-    complexity: analyzeData.weight
-  })
-});
+        
+        
 
+      } catch (err) {
+        console.error("Submission error:", err);
+        
+        // Update UI with error
+        document.getElementById("status").innerText = "❌ Error";
+        document.getElementById("status").className = "error";
+        document.getElementById("verdicts").innerText = err.message || "Error during execution or server unavailable.";
+        document.getElementById("result").style.display = "block";
 
+        debugConsole.innerText = `🚨 System Error:\n${err.message}`;
+        debugConsole.style.display = "block";
+      } finally {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Code";
+      }
+    }
+
+    // Initialize the page when loaded
+    window.addEventListener('DOMContentLoaded', initializePage);
   </script>
 </body>
 </html>
