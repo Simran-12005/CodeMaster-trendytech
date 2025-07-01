@@ -85,6 +85,19 @@
       height: 90px;
       margin: 20px left;
     }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -94,6 +107,7 @@
 
   <textarea id="code" placeholder="Write your code here..."></textarea><br>
   <button id="submit-btn" onclick="submitCode()">Submit Code</button>
+   <button onclick="window.location.href='Code.html'">Back to Questions</button>
 
   <div id="result">
     <p><strong>Status:</strong> <span id="status">--</span></p>
@@ -453,7 +467,7 @@ if (!wasSolved) {
         // Update UI with error
         document.getElementById("status").innerText = "❌ Error";
         document.getElementById("status").className = "error";
-        document.getElementById("verdicts").innerText = err.message || "Error during execution or server unavailable.";
+        document.getElementById("verdicts").innerText = err.message;
         document.getElementById("result").style.display = "block";
 
         debugConsole.innerText = `🚨 System Error:\n${err.message}`;

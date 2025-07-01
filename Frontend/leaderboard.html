@@ -113,10 +113,8 @@
       font-size: 0.8em;
       margin-left: 5px;
     }
-    
-    button
-    {
-background-color: #4CAF50;
+    button {
+      background-color: #4CAF50;
       color: white;
       border: none;
       padding: 10px 20px;
@@ -127,7 +125,6 @@ background-color: #4CAF50;
       margin: 10px 2px;
       cursor: pointer;
       border-radius: 4px;
-
     }
     .logo-banner {
       background-image: url('CodeMaster.jpg');
@@ -138,10 +135,32 @@ background-color: #4CAF50;
       height: 90px;
       margin: 20px left;
     }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 4px;
+      z-index: 1000;
+      animation: fadeIn 0.5s, fadeOut 0.5s 2.5s;
+    }
+    .toast.error {
+      background-color: #f44336;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
   </style>
 </head>
 <body>
-   <div class="logo-banner"></div>
+  <div class="logo-banner"></div>
   <div class="container">
     <h1>CodeMaster Leaderboard</h1>
     <button class="btn" id="refreshBtn">Refresh Data</button>
@@ -196,16 +215,28 @@ background-color: #4CAF50;
       }
     });
 
+    function showToast(message, isError = false) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${isError ? 'error' : ''}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
     function showResetNotification() {
       resetNotification.textContent = `Note: ${resetQuestions.length} question(s) have been reset and are hidden from the leaderboard.`;
-      resetNotification.style.display = 'none';
+      resetNotification.style.display = 'block';
+      resetNotification.style.backgroundColor = '#fff3cd';
+      resetNotification.style.padding = '10px';
+      resetNotification.style.borderRadius = '4px';
+      resetNotification.style.margin = '10px 0';
+      resetNotification.style.borderLeft = '4px solid #ffc107';
     }
 
     function updateCurrentTime() {
       currentTimeSpan.textContent = new Date().toLocaleTimeString();
     }
 
-    // Get weights from local storage
     function getQuestionWeights() {
       try {
         const weights = {};
@@ -233,29 +264,50 @@ background-color: #4CAF50;
 
     async function loadLeaderboard() {
       try {
-        leaderboardBody.innerHTML = '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Loading...';
+        leaderboardBody.innerHTML = '<tr><td colspan="5" class="loading">Loading leaderboard data...</td></tr>';
         
-        const response = await fetch(API_URL);
-        const result = await response.json();
+        const response = await fetch(`${API_URL}?_=${Date.now()}`);
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`Server returned ${response.status} status`);
         }
         
-        if (!result.success) {
-          throw new Error(result.message || 'Failed to load leaderboard');
+        const result = await response.json();
+        
+        if (!result || !result.success || !Array.isArray(result.data)) {
+          throw new Error('Invalid leaderboard data format');
         }
         
-        if (!result.data || result.data.length === 0) {
-          leaderboardBody.innerHTML = '<tr><td colspan="5">No data available</td></tr>';
-          return;
-        }
+        // Validate and clean the data
+        const cleanData = result.data.map(user => ({
+          username: user.username || 'Anonymous',
+          submissions: Array.isArray(user.submissions) 
+            ? user.submissions.filter(sub => sub && typeof sub === 'object')
+            : [],
+          totalWeight: typeof user.totalWeight === 'number' ? user.totalWeight : 0,
+          lastSubmission: user.lastSubmission || null
+        }));
         
-        // Filter the data to only show currently solved questions for the current user
-        const filteredData = filterLeaderboardData(result.data);
+        const filteredData = filterLeaderboardData(cleanData);
         renderLeaderboard(filteredData);
+        showToast('Leaderboard updated successfully');
+        
       } catch (error) {
-        leaderboardBody.innerHTML = `<tr><td colspan="5" class="error">${error.message}</td></tr>`;
+        console.error('Leaderboard error:', error);
+        leaderboardBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="error">
+              Error loading leaderboard: ${error.message}
+              <br><button onclick="loadLeaderboard()">Retry</button>
+            </td>
+          </tr>
+        `;
+        showToast(`Error: ${error.message}`, true);
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Refresh Data';
       }
     }
 
@@ -264,28 +316,19 @@ background-color: #4CAF50;
       const questionWeights = getQuestionWeights();
       
       return data.map(user => {
-        // For the current user, filter to only show non-reset, currently solved questions
-        if (isCurrentUser(user)) {
-          const filteredSubmissions = user.submissions.filter(sub => {
-            const questionId = getQuestionIdFromTitle(sub.questionTitle);
-            return solvedQuestions.includes(questionId) && !resetQuestions.includes(questionId);
-          });
-          
-          return {
-            ...user,
-            submissions: filteredSubmissions,
-            totalWeight: filteredSubmissions.reduce((sum, sub) => {
-              const weight = sub.weight || questionWeights[sub.questionTitle] || 1;
-              return sum + weight;
-            }, 0)
-          };
-        }
-        
-        // For other users, just filter out reset questions
-        const filteredSubmissions = user.submissions.filter(sub => {
+        // For all users, filter out reset questions
+        let filteredSubmissions = user.submissions.filter(sub => {
           const questionId = getQuestionIdFromTitle(sub.questionTitle);
           return !resetQuestions.includes(questionId);
         });
+        
+        // For current user, also filter to only show currently solved questions
+        if (isCurrentUser(user)) {
+          filteredSubmissions = filteredSubmissions.filter(sub => {
+            const questionId = getQuestionIdFromTitle(sub.questionTitle);
+            return solvedQuestions.includes(questionId);
+          });
+        }
         
         return {
           ...user,
@@ -295,7 +338,8 @@ background-color: #4CAF50;
             return sum + weight;
           }, 0)
         };
-      }).filter(user => user.submissions.length > 0);
+      }).filter(user => user.submissions.length > 0)
+        .sort((a, b) => a.totalWeight - b.totalWeight);
     }
 
     function getQuestionIdFromTitle(title) {
@@ -319,9 +363,6 @@ background-color: #4CAF50;
         return;
       }
       
-      // Sort by total weight (descending)
-      data.sort((a, b) => b.totalWeight - a.totalWeight);
-      
       data.forEach((user, index) => {
         const row = document.createElement('tr');
         
@@ -344,18 +385,22 @@ background-color: #4CAF50;
         
         // Format questions list with weights
         const questionsList = user.submissions.map(sub => {
+          if (!sub) return '';
+          
+          const questionTitle = sub.questionTitle || 'Untitled Question';
           let isToday = false;
+          
           try {
             isToday = sub.timestamp && new Date(sub.timestamp) >= today;
           } catch (e) {
             isToday = false;
           }
           
-          const weight = sub.weight || getQuestionWeights()[sub.questionTitle] || 1;
+          const weight = sub.weight || getQuestionWeights()[questionTitle] || 1;
           
           return `
             <span class="question-item ${isToday ? 'today-activity' : ''}">
-              ${sub.questionTitle || 'Untitled Question'}
+              ${questionTitle}
               <span class="question-weight">(${weight})</span>
               ${isToday ? '↑' : ''}
             </span>
@@ -365,7 +410,7 @@ background-color: #4CAF50;
         row.innerHTML = `
           <td class="${medalClass}">${index + 1}</td>
           <td>
-            ${user.displayName || user.username || (user._id ? user._id.toString() : 'Unknown User')}
+            ${user.username}
             ${isCurrentUser(user) ? '<span class="you-badge">(You)</span>' : ''}
           </td>
           <td>
@@ -387,10 +432,7 @@ background-color: #4CAF50;
 
     function isCurrentUser(user) {
       const currentUsername = localStorage.getItem('username');
-      if (!currentUsername) return false;
-      
-      return (user.username && user.username === currentUsername) || 
-             (user._id && user._id.toString().includes(currentUsername));
+      return currentUsername && user.username === currentUsername;
     }
 
     function formatLastActivity(timestamp) {
@@ -414,43 +456,35 @@ background-color: #4CAF50;
       }
     }
 
-    // Function to reset a question (call this from your question page)
     function resetQuestion(id) {
-      // Add to reset questions list if not already there
       if (!resetQuestions.includes(id)) {
         resetQuestions.push(id);
         localStorage.setItem('resetQuestions', JSON.stringify(resetQuestions));
       }
       
-      // Remove from solved questions
       solvedQuestions = solvedQuestions.filter(qId => qId !== id);
       localStorage.setItem('solvedQuestions', JSON.stringify(solvedQuestions));
-      
-      // Remove the weight for this question
       localStorage.removeItem(`question_${id}_weight`);
       
-      // Update UI and refresh leaderboard
       loadLeaderboard();
       showResetNotification();
+      showToast(`Question ${id + 1} has been reset`);
     }
 
     function resetAllUserData() {
-      // Clear all question-related data
       solvedQuestions = [];
       localStorage.removeItem('solvedQuestions');
       
-      // Clear question weights
       for (let i = 0; i < 7; i++) {
         localStorage.removeItem(`question_${i}_weight`);
       }
       
-      // Clear reset questions
       resetQuestions = [];
       localStorage.removeItem('resetQuestions');
       resetNotification.style.display = 'none';
       
-      // Update UI
       loadLeaderboard();
+      showToast('All user data has been reset');
     }
 
     function getSolvedQuestions() {
@@ -459,14 +493,7 @@ background-color: #4CAF50;
         if (!stored) return [];
         
         const parsed = JSON.parse(stored);
-        
-        if (Array.isArray(parsed)) {
-          if (parsed.length > 0 && typeof parsed[0] === 'object') {
-            return parsed.map(item => item.id);
-          }
-          return parsed;
-        }
-        return [];
+        return Array.isArray(parsed) ? parsed : [];
       } catch (e) {
         console.error('Error reading solved questions:', e);
         return [];

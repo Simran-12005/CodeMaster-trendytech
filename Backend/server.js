@@ -2,15 +2,15 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
-
 const app = express();
+require('dotenv').config();
 
 app.use(cors());
 
 // This line must be before your route definitions
 app.use(express.json());
 
-const MONGODB_URI = 'mongodb://127.0.0.1:27017/codemaster';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // User schema & model
 const userSchema = new mongoose.Schema({
@@ -78,9 +78,9 @@ app.post('/login', async (req, res) => {
 });
 
 // Connect DB and start server
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected');
-    app.listen(5000, () => console.log('Server running on port 5000'));
+    app.listen(8000, () => console.log('Server running on port 8000'));
   })
-  .catch(err => console.error(err));
+  .catch(err => console.error('MongoDB connection error:', err));

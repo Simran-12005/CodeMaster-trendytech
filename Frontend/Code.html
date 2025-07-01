@@ -328,7 +328,7 @@
     }
 
     function updateLeaderboardButton(solvedCount) {
-      const remaining = Math.max(0, 5 - solvedCount);
+      const remaining = Math.max(0, 6- solvedCount);
       const totalWeight = calculateTotalWeight();
       
       // Update button state
@@ -336,8 +336,8 @@
       
       // Update displays
       btnText.textContent = 'Submit';
-      remainingDisplay.textContent = solvedCount >= 5 ? '' : ` (${remaining} more to solve)`;
-      weightDisplay.textContent = ` - ${solvedCount >= 5 ? 'Total' : 'Current'} Weight: ${totalWeight}`;
+      remainingDisplay.textContent = solvedCount > 5 ? '' : ` (${remaining} more to solve)`;
+      weightDisplay.textContent = ` - ${solvedCount > 5 ? 'Total' : 'Current'} Weight: ${totalWeight}`;
       
       // Check if these questions have already been submitted
       const submittedQuestions = JSON.parse(localStorage.getItem('submittedQuestions') || '[]');

@@ -35,6 +35,11 @@
       width: 30px;
       height: 30px;
       border-radius: 50%;
+      background-color:beige;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
     }
 
     .user-name {
@@ -47,21 +52,18 @@
       height: 25px;
       cursor: pointer;
       transition: transform 0.2s ease;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
     }
 
     .logout-icon:hover {
       transform: scale(1.1);
     }
 
-    .logo-banner {
-      background-image: url('CodeMaster.jpg');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      width: 300px;
-      height: 150px;
-      margin: 40px auto;
-    }
+    
 
     main {
       padding: 20px;
@@ -136,112 +138,250 @@
     #leaderboard-preview a:hover {
       text-decoration: underline;
     }
+
+    .login-prompt {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #fff3cd;
+      border-radius: 8px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .logo-banner {
+      background-image: url('CodeMaster.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position:center;
+      width: 90px;
+      height: 90px;
+      margin: 100px center;
+    }
   </style>
 </head>
 <body>
 
   <!-- NAVBAR -->
   <div class="navbar">
+    
     <div class="user-section">
-      <img src="user.jpg" alt="User Icon" class="user-icon">
+      <div class="user-icon">👤</div>
       <div class="user-name" id="user-name">Welcome</div>
     </div>
-    <img src="logout.jpg" alt="Logout" class="logout-icon" onclick="logout()" title="Logout">
+     <img src="logout.jpg" alt="Logout" class="logout-icon" onclick="logout()" title="Logout">
   </div>
 
   <!-- MAIN CONTENT -->
   <main>
     <div class="logo-banner"></div>
     <h1>Welcome to CodeMaster</h1>
-    <p>Your place to learn Coding and Master Skills!!!!</p>
-
-    <div id="user-status">Loading your status...</div>
-
-    <br><br>
-    <h2>Rules of Code Competition</h2>
-    <ul>
-      <li>The participant must answer all the questions.</li>
-      <li>The Weightage of the total code should be less</li>
-      <li>The Participant with the least Code Weightage will be the winner</li>
-    </ul>
-    <br>
-    <strong>BEST OF LUCK!!!!</strong>
-    <br><br>
-    <button onclick="window.location.href='Code.html'">Write Code</button>
-
-   <!-- LEADERBOARD PREVIEW -->
-    <div id="leaderboard-preview">
-      <h3>Leaderboard</h3>
-      <ul id="top-players">
-        <li>Loading leaderboard...</li>
-      </ul>
-      <a href="leaderboard.html">View Full Leaderboard →</a>
+    
+    <div id="content-area">
+      <!-- Content will be loaded here based on login status -->
     </div>
   </main>
 
-  <!-- SCRIPT -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // User status
-      const username = localStorage.getItem('username');
-      const nameDiv = document.getElementById('user-name');
-      const statusDiv = document.getElementById('user-status');
-
-      if (username) {
-        nameDiv.textContent = username;
-      } else {
-        nameDiv.textContent = 'Guest';
-        window.location.href = "login.html";
+    // Initialize data in localStorage if not exists
+    function initializeStorage() {
+      if (!localStorage.getItem('leaderboard')) {
+        localStorage.setItem('leaderboard', JSON.stringify([]));
       }
+      if (!localStorage.getItem('solvedQuestions')) {
+        localStorage.setItem('solvedQuestions', JSON.stringify([]));
+      }
+      if (!localStorage.getItem('username')) {
+        localStorage.setItem('username', 'Guest');
+      }
+    }
 
-      // Show number of solved questions
-      const solved = JSON.parse(localStorage.getItem("solvedQuestions")) || [];
-      statusDiv.textContent = `✅ Questions Solved: ${solved.length}`;
+    function loadContent() {
+      const username = localStorage.getItem('username');
+      const contentArea = document.getElementById('content-area');
+      
+      if (username && username !== 'Guest') {
+        // Load logged in content
+        contentArea.innerHTML = `
+          <p>Your place to learn Coding and Master Skills!!!!</p>
+          <div id="user-status">Loading your status...</div>
+          <br><br>
+          <h2>Rules of Code Competition</h2>
+          <ul>
+            <li>The participant must answer all the questions.</li>
+            <li>The Weightage of the total code should be less</li>
+            <li>The Participant with the least Code Weightage will be the winner</li>
+          </ul>
+          <br>
+          <strong>BEST OF LUCK!!!!</strong>
+          <br><br>   
+   <button onclick="window.location.href='Code.html'">Write Code</button>
 
-      // Fetch top players from leaderboard
-      fetchTopPlayers();
+          <div id="leaderboard-preview">
+            <h3>Leaderboard</h3>
+            <ul id="top-players">
+              <li>Loading leaderboard...</li>
+            </ul>
+            <a href="leaderboard.html" onclick="viewFullLeaderboard()">View Full Leaderboard →</a>
+          </div>
+        `;
+        
+        updateSolvedQuestionsCount();
+        fetchTopPlayers();
+      } else {
+        // Load guest content
+        contentArea.innerHTML = `
+          <div class="login-prompt">
+            <h3>Please log in to continue</h3>
+            <p>You need to be logged in to access the coding challenges and leaderboard.</p>
+            <button onclick="goToLogin()">Go to Login Page</button>
+          </div>
+        `;
+      }
+    }
+
+    function goToLogin() {
+      // In a real app, this would go to login.html
+      const username = prompt("Enter your username (for demo purposes):");
+      if (username && username.trim() !== '') {
+        localStorage.setItem('username', username.trim());
+        loadContent();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeStorage();
+      document.getElementById('user-name').textContent = localStorage.getItem('username');
+      loadContent();
     });
 
     function logout() {
-      localStorage.removeItem('username');
-      localStorage.removeItem('solvedQuestions');
-      window.location.href = "index.html";
-    }
-
-    // Function to fetch top players from leaderboard
-    async function fetchTopPlayers() {
-      try {
-        // In a real application, you would fetch from your API endpoint
-        // const response = await fetch('/api/leaderboard/top');
-        // const topPlayers = await response.json();
-        
-        // Mock data - replace with actual API call
-        const mockTopPlayers = [
-          { username: "CodeMaster42", score: 95 },
-          { username: "DevPro99", score: 92 },
-          { username: "ByteMe", score: 89 },
-          { username: "SyntaxKing", score: 87 },
-          { username: "AlgorithmAce", score: 85 }
-        ];
-        
-        displayTopPlayers(mockTopPlayers);
-      } catch (error) {
-        console.error("Error fetching leaderboard:", error);
-        document.getElementById('top-players').innerHTML = 
-          '<li>Error loading leaderboard. Please try again later.</li>';
+      if (confirm("Are you sure you want to log out?")) {
+        localStorage.setItem('username', 'Guest');
+        loadContent();
       }
     }
 
-    function displayTopPlayers(players) {
-      const leaderboardList = document.getElementById('top-players');
-      leaderboardList.innerHTML = '';
-      
-      players.forEach((player, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>${index + 1}. ${player.username}</span> - Score: ${player.score}`;
-        leaderboardList.appendChild(li);
+   
+    function viewFullLeaderboard() {
+      const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+      const sortedLeaderboard = [...leaderboard].sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        if (b.solved !== a.solved) return b.solved - a.solved;
+        return new Date(a.lastUpdated) - new Date(b.lastUpdated);
       });
+      
+      let leaderboardHTML = '<h2>Full Leaderboard</h2><ol>';
+      sortedLeaderboard.forEach((player, index) => {
+        leaderboardHTML += `<li><strong>${player.username}</strong> - Score: ${player.score || 0} (Solved: ${player.solved || 0})</li>`;
+      });
+      leaderboardHTML += '</ol><button onclick="loadContent()">Back to Home</button>';
+      
+      document.getElementById('content-area').innerHTML = `
+        <div style="background:white; padding:20px; border-radius:10px; max-width:800px; margin:0 auto">
+          ${leaderboardHTML}
+        </div>
+      `;
     }
+
+    function updateSolvedQuestionsCount() {
+      const solved = JSON.parse(localStorage.getItem("solvedQuestions")) || [];
+      const uniqueSolved = [...new Set(solved)];
+      const statusDiv = document.getElementById('user-status');
+      if (statusDiv) {
+        statusDiv.textContent = `✅ Questions Solved: ${uniqueSolved.length}`;
+      }
+    }
+
+    function initializeUserInLeaderboard(username) {
+      const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+      const userExists = leaderboard.some(user => user.username === username);
+      
+      if (!userExists && username !== 'Guest') {
+        leaderboard.push({
+          username: username,
+          score: 0,
+          solved: 0,
+          lastUpdated: new Date().toISOString()
+        });
+        localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+      }
+    }
+
+    function fetchTopPlayers() {
+      try {
+        const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+        const playersList = document.getElementById('top-players');
+        
+        if (!playersList) return;
+        
+        const validLeaderboard = leaderboard.filter(user => user.username && user.username !== 'Guest');
+        const sortedLeaderboard = [...validLeaderboard].sort((a, b) => {
+          if (a.score !== b.score) return a.score - b.score;
+          if (b.solved !== a.solved) return b.solved - a.solved;
+          return new Date(a.lastUpdated) - new Date(b.lastUpdated);
+        });
+        
+        const topPlayers = sortedLeaderboard.slice(0, 5);
+        
+        playersList.innerHTML = '';
+        if (topPlayers.length === 0) {
+          playersList.innerHTML = '<li>No players yet. Be the first!</li>';
+          return;
+        }
+        
+        topPlayers.forEach((player, index) => {
+          const li = document.createElement('li');
+          const score = player.score !== undefined ? player.score : 0;
+          const solved = player.solved !== undefined ? player.solved : 0;
+          li.innerHTML = `<span>${index + 1}. ${player.username}</span> - Score: ${score} (Solved: ${solved})`;
+          playersList.appendChild(li);
+        });
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+        const playersList = document.getElementById('top-players');
+        if (playersList) {
+          playersList.innerHTML = '<li>Error loading leaderboard. Please try again later.</li>';
+        }
+      }
+    }
+
+    // This function would be called when a question is solved
+    window.updateUserProgress = function(questionId, score) {
+      const username = localStorage.getItem('username');
+      if (!username || username === 'Guest') return;
+      
+      initializeUserInLeaderboard(username);
+      
+      // Update solved questions
+      let solved = JSON.parse(localStorage.getItem("solvedQuestions")) || [];
+      if (!solved.includes(questionId)) {
+        solved.push(questionId);
+        localStorage.setItem("solvedQuestions", JSON.stringify(solved));
+      }
+      
+      // Update leaderboard
+      const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+      const userIndex = leaderboard.findIndex(user => user.username === username);
+      
+      if (userIndex !== -1) {
+        const uniqueSolved = [...new Set(solved)];
+        leaderboard[userIndex].solved = uniqueSolved.length;
+        leaderboard[userIndex].score = (leaderboard[userIndex].score || 0) + score;
+        leaderboard[userIndex].lastUpdated = new Date().toISOString();
+        localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+      }
+      
+      // Update the display
+      updateSolvedQuestionsCount();
+      fetchTopPlayers();
+      
+      alert(`Question solved! Your score increased by ${score}.`);
+    };
+
+    // For testing purposes
+    window.simulateQuestionSolved = function(questionId, score) {
+      updateUserProgress(questionId, score);
+    };
   </script>
 </body>
 </html>
