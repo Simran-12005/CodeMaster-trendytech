@@ -22,7 +22,7 @@ CodeMaster/
 │   ├── server.js          # Node.js authentication server
 │   ├── execute.py         # Flask API for execution/analysis
 │   ├── leaderboard.js     # Node.js leaderboard service
-│   ├── gateway.js # Reverse proxy gateway (port 8080)
+│   ├── gateway.js         # Reverse proxy gateway (port 8080)
 │   ├── requirements.txt   # Python dependencies
 │   
 ├── frontend/
