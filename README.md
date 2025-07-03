@@ -22,6 +22,7 @@ CodeMaster/
 │   ├── server.js          # Node.js authentication server
 │   ├── execute.py         # Flask API for execution/analysis
 │   ├── leaderboard.js     # Node.js leaderboard service
+│   ├── gateway.js # Reverse proxy gateway (port 8080)
 │   ├── requirements.txt   # Python dependencies
 │   
 ├── frontend/
@@ -33,7 +34,7 @@ CodeMaster/
 │   ├── leaderboard.html   # Rankings display
 │
 ├── database/              # MongoDB configuration
-├── README.md
+├── README.md              #Documentation
 ```
 
 ## 🛠️ Setup
@@ -61,7 +62,7 @@ pip install flask flask-cors pycsparker waitress pymongo
 pip freeze > requirements.txt
 
 # Install Node dependencies (from project root)
-npm install express mongoose bcrypt cors body-parser
+npm install express mongoose bcrypt cors body-parser http-proxy-middleware
 ```
 
 #### Frontend Setup
@@ -91,6 +92,10 @@ waitress-serve --port=5000 execute:app
 node leaderboard.js
 
 
+# 4. Gateway Service
+node gateway.js
 
-
+So,users only access:http://localhost:8080
+Instead of accessing ports like :8000, :3000, or :5000 directly.
+gateway.js uses http-proxy-middleware to forward all traffic.
 
