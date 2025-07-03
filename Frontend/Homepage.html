@@ -1,91 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>CodeMaster</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            background: linear-gradient(to bottom right, #e0f7ff, #ffffff);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome to CodeMaster</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        .logo {
-    background-image: url("CodeMaster.jpg");
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    height: 150px;
-    width: 150px;  
-    margin: 0 auto;
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #e3f2fd, #ffffff);
+      color: #1f2937;
+      text-align: center;
+      padding: 40px 20px;
+    }
 
-
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        h1 {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 2.8em;
-            color: navy;
-            text-align: center;
-            margin-top: 10px;
-            animation: fadeIn 1.5s ease-in-out;
-        }
-
-        h2 {
-            font-size: 1.5em;
-            color: #333;
-            text-align: center;
-            margin-bottom: 50px;
-            animation: fadeIn 2s ease-in-out;
-        }
-
-        .button {
-            display: block;
-            margin: 0 auto;
-            background-color: royalblue;
-            color: white;
-            padding: 14px 28px;
-            font-size: 1.1em;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            animation: fadeIn 2.5s ease-in-out;
-        }
-
-        .button:hover {
-            background-color: dodgerblue;
-            transform: scale(1.05);
-        }
-      .logo-banner {
+    .logo-banner {
       background-image: url('CodeMaster.jpg');
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      width: 300px;
-      height: 150px;
-      margin: 40px auto;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 20px;
+      animation: zoomIn 1s ease-in-out;
     }
 
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    h1 {
+      font-size: 3em;
+      color: #0d47a1;
+      margin-bottom: 10px;
+      animation: fadeInUp 1.2s ease;
+    }
 
-        
-        @media (max-width: 600px) {
-            h1 { font-size: 2em; }
-            h2 { font-size: 1.2em; }
-            .button { font-size: 1em; padding: 12px 20px; }
-        }
-    </style>
+    h2 {
+      font-size: 1.5em;
+      color: #37474f;
+      margin-bottom: 40px;
+      animation: fadeInUp 1.5s ease;
+    }
+
+    .button {
+      background-color: #1976d2;
+      color: white;
+      padding: 14px 32px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: fadeInUp 2s ease;
+    }
+
+    .button:hover {
+      background-color: #0d47a1;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes zoomIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2em;
+      }
+      h2 {
+        font-size: 1.2em;
+      }
+      .button {
+        font-size: 1em;
+        padding: 12px 24px;
+      }
+    }
+  </style>
 </head>
 <body>
-   <div class="logo-banner"></div>
-    <h1>WELCOME TO CODEMASTER</h1>
-    <h2>A platform to <u>CODE</u> and <u>MASTER </u>skills</h2>
-    <button class="button" onclick="window.location.href='index.html'">Let's Code!</button>
+  <div class="logo-banner"></div>
+  <h1>Welcome to CodeMaster</h1>
+  <h2>Your journey to <b>Code</b> and <b>Master</b> skills starts here!</h2>
+  <button class="button" onclick="window.location.href='index.html'">Let's Code!</button>
 </body>
 </html>

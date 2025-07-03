@@ -254,12 +254,13 @@
       loadContent();
     });
 
-    function logout() {
-      if (confirm("Are you sure you want to log out?")) {
-        localStorage.setItem('username', 'Guest');
-        loadContent();
-      }
-    }
+  function logout() {
+  if (confirm("Are you sure you want to log out?")) {
+    localStorage.clear(); // optional: clear all localStorage keys
+    window.location.href = 'index.html'; // go to homepage after logout
+  }
+}
+
 
    
     function viewFullLeaderboard() {

@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
-
+app.get('/', (req, res) => {
+  res.send('Main server is working!');
+});
 // Register route
 app.post('/register', async (req, res) => {
   console.log('Register req.body:', req.body);
@@ -76,7 +78,15 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
 });
+// Example route
+app.post('/api/some-action', (req, res) => {
+    res.json({ message: 'Main server response' });
+});
 
+// Ping route
+app.get('/ping', (req, res) => {
+    res.status(200).send('Main server OK');
+});
 // Connect DB and start server
 mongoose.connect(MONGODB_URI)
   .then(() => {

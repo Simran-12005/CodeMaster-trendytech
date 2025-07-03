@@ -247,7 +247,15 @@ const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
+// Example route
+app.post('/submit', (req, res) => {
+    res.json({ message: 'Score submitted!' });
+});
 
+// Ping route
+app.get('/ping', (req, res) => {
+    res.status(200).send('Leaderboard OK');
+});
 // Graceful shutdown
 ['SIGINT', 'SIGTERM'].forEach(signal => {
   process.on(signal, () => {
